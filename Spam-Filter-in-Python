@@ -1,0 +1,125 @@
+#import nltk
+#nltk.download()
+#nltk.download('stopwords')
+import pandas as pd
+messages=pd.read_csv(r"C:\Users\AKHIL\Desktop\R csv\spam.csv",encoding='cp1252')
+messages.shape
+messages.head()
+
+messages=messages.iloc[:,[0,1]]##selecting 1st 2 columns because rest are having junk values
+messages.head()
+messages.shape
+
+messages.describe()
+
+messages.rename(columns={"v1":"label","v2":"message"},inplace=True)## renaming columns
+print(messages.head())
+
+messages.label.value_counts()
+print(messages.label.value_counts())
+
+length=messages.message.apply(len)  #finding length of each message
+print(length)
+
+messages=pd.concat([messages,length],axis=1)
+print(messages)
+
+messages.columns.values[2]="Length"
+print(messages.head())
+
+from nltk.corpus import stopwords
+stopwords.words("english")
+
+import string
+string.punctuation #### punctuation marks ... just shows punctuation not needed ##############################
+
+abc=" i want to ? remove !! all the...punctuation marks $ from %%"
+
+abc_refined=[i for i in abc if i not in string.punctuation]## stores all the non punctuation marks#####
+print(abc_refined)
+
+abc_refined="".join(abc_refined)  ## removing my spaces
+print(abc_refined)
+
+aa=abc_refined.split()
+print(aa)
+
+def text_process(mess):   ### creating a function 
+    """
+    1.remove the punctuation
+    2.remove the stopwords
+    3.return the list of clean textwords
+    """
+    
+    nopunc=[char for char in mess if char not in string.punctuation]  
+    nopunc="".join(nopunc)
+    
+    return [word for word in nopunc.split()if word not in stopwords.words("english")]
+
+messages['message'].apply(text_process) ### calling the function
+#print(messages.head())
+
+from sklearn.feature_extraction.text import CountVectorizer
+
+bow_transformer=CountVectorizer(analyzer=text_process).fit(messages["message"])
+print(bow_transformer)
+bow_transformer.vocabulary_
+print(len(bow_transformer.vocabulary_))
+messages_bow=bow_transformer.transform(messages.message)## tdm is created ###
+print(messages_bow)
+print(messages_bow.shape)
+print(type(messages_bow))
+from sklearn.feature_extraction.text import TfidfTransformer
+tfidf_transformer=TfidfTransformer()
+tfidf_transformer.fit(messages_bow)
+tfidf_mess=tfidf_transformer.transform(messages_bow)## tf/idf has been created
+print(tfidf_mess)
+from sklearn.naive_bayes import MultinomialNB
+naive_bay=MultinomialNB()
+spam_nb_model=naive_bay.fit(tfidf_mess,messages["label"])
+pred1=naive_bay.predict(tfidf_mess)
+from sklearn.metrics import confusion_matrix
+co = confusion_matrix(pred1,messages["label"])
+print(co)
+
+tab1=confusion_matrix(pred1,messages["label"])
+tab1
+
+accuracy=sum(tab1.diagonal())/tab1.sum()#####  to get the accuracy  ######################## 
+print("accuracy of the model is ::",accuracy)
+
+
+
+
+from sklearn.tree import DecisionTreeClassifier
+dtree=DecisionTreeClassifier(min_samples_split=100)
+dtree.fit(tfidf_mess,messages["label"])
+pred_value1=dtree.predict(tfidf_mess)
+
+from sklearn.metrics import confusion_matrix
+co = confusion_matrix(pred1,messages["label"])
+co
+
+tab1=confusion_matrix(pred1,messages["label"])
+tab1
+
+accuracy=sum(tab1.diagonal())/tab1.sum()#####  to get the accuracy  ######################## 
+print("accuracy of the model is ::",accuracy)
+
+
+
+from sklearn.ensemble import RandomForestClassifier
+random=RandomForestClassifier(100)
+random.fit(tfidf_mess,messages["label"])
+pred_value111=random.predict(tfidf_mess)
+
+from sklearn.metrics import confusion_matrix
+con = confusion_matrix(pred_value111,messages["label"])
+con
+
+tab111=confusion_matrix(pred_value111,messages["label"])
+print(tab111)
+
+accuracy=sum(tab111.diagonal())/tab111.sum()#####  to get the accuracy  ######################## 
+print("accuracy of the model is ::",accuracy)
+
